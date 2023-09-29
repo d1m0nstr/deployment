@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pg-db
-  namespace: pg
+  namespace: redmine
 spec:
   replicas: 1
   selector:
@@ -14,14 +14,22 @@ spec:
     metadata:
       labels:
         app: pg-db
+    spec:
+      initContainers:
+      - image: busybox
+        name: mount-permissions-fix
+        command: ["sh", "-c", "chmod 777 /var/lib/postgresql/data"]
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
       containers:
       - image: postgres:16.0
-        name: psql
+        name: postgres
         env:
         - name: POSTGRES_USER
-          value: "psql_user"
+          value: "rm_db_user"
         - name: POSTGRES_DB
-          value: "psql_db"
+          value: "rm_db_database"
         - name: PGDATA
           value: "/var/lib/postgresql/data/pgdata"
         - name: POSTGRES_PASSWORD
@@ -29,17 +37,16 @@ spec:
             secretKeyRef:
               name: pg-secret
               key: PASS
-        imagePullPolicy: "Always"
         ports:
         - containerPort: 5432
           protocol: TCP
         resources:
           requests:
-            cpu: 100m
-            memory: 200Mi
+            cpu: 500m
+            memory: 1000Mi
           limits:
-            cpu: 1000m
-            memory: 2048Mi
+            cpu: 500m
+            memory: 1000Mi
         volumeMounts:
         - name: data
           mountPath: /var/lib/postgresql/data
